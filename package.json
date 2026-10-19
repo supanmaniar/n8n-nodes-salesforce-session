@@ -17,7 +17,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/supanmaniar/n8n-nodes-salesforce-session.git"
+		"url": "git+https://github.com/supanmaniar/n8n-nodes-salesforce-session.git"
 	},
 	"scripts": {
 		"build": "n8n-node build",
@@ -33,6 +33,9 @@
 	"files": [
 		"dist"
 	],
+	"publishConfig": {
+		"access": "public"
+	},
 	"n8n": {
 		"n8nNodesApiVersion": 1,
 		"strict": true,
