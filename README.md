@@ -20,6 +20,7 @@ its `sid` cookie.
   - [Upgrading and uninstalling](#upgrading-and-uninstalling)
   - [Troubleshooting the install](#troubleshooting-the-install)
 - [Credential: Salesforce Session API](#credential-salesforce-session-api)
+- [Using the credential with the HTTP Request node](#using-the-credential-with-the-http-request-node)
 - [Node: Salesforce Session](#node-salesforce-session)
 - [Workflow examples](#workflow-examples)
 - [Publishing to npm](#publishing-to-npm)
@@ -324,6 +325,116 @@ successful test also proves the session works.
 - `Bearer Token` — the documented form for the REST API. Use it if you hit any endpoint that rejects the
   cookie.
 - `Both` — sends both headers. Useful as a fallback while diagnosing a `401`.
+
+## Using the credential with the HTTP Request node
+
+You do not need this package's node to make Salesforce calls. The credential implements n8n's
+`authenticate` hook, so the built-in **HTTP Request** node can use it directly. This is the most
+flexible way to work with Salesforce, because you get the full HTTP Request feature set — pagination,
+batching, response splitting, and every option that node offers.
+
+### Setup
+
+1. Add an **HTTP Request** node.
+2. Set **Authentication** to **Predefined Credential Type**.
+3. Set **Credential Type** to **Salesforce Session API**.
+4. Select (or create) your Salesforce Session credential.
+5. Enter the URL.
+
+That is all. n8n runs the SOAP login through `preAuthentication`, stores the session on the
+credential, attaches the header, and retries once with a fresh session if Salesforce answers `401`.
+
+### Building the URL
+
+The credential stores `instanceUrl` and `apiVersion`, but the HTTP Request node cannot read them
+automatically. Use your org's My Domain URL directly:
+
+```
+https://your-domain.my.salesforce.com/services/data/v62.0/query
+```
+
+Prefer the `my.salesforce.com` form over the `lightning.force.com` URL you see in the browser — the
+latter is not a valid API host and is affected by org migrations.
+
+If you would rather not hardcode the host, run **Salesforce Session → Get Session** first and
+reference the output:
+
+```
+{{ $('Salesforce Session').item.json.instanceUrl }}/services/data/v{{ $('Salesforce Session').item.json.apiVersion }}/query
+```
+
+### Example: run a SOQL query
+
+| Field | Value |
+| --- | --- |
+| Method | `GET` |
+| URL | `https://your-domain.my.salesforce.com/services/data/v62.0/query` |
+| Authentication | Predefined Credential Type → Salesforce Session API |
+| Send Query Parameters | ✅ |
+| Name | `q` |
+| Value | `SELECT Id, Name FROM Account LIMIT 10` |
+
+The response is the standard envelope:
+
+```json
+{
+  "totalSize": 2,
+  "done": true,
+  "records": [
+    { "attributes": { "type": "Account" }, "Id": "001...", "Name": "Acme" },
+    { "attributes": { "type": "Account" }, "Id": "001...", "Name": "Global Media" }
+  ]
+}
+```
+
+### Example: create a record
+
+| Field | Value |
+| --- | --- |
+| Method | `POST` |
+| URL | `https://your-domain.my.salesforce.com/services/data/v62.0/sobjects/Account` |
+| Authentication | Predefined Credential Type → Salesforce Session API |
+| Send Body | ✅ |
+| Body Content Type | JSON |
+| Body | `{ "Name": "Acme" }` |
+
+### Example: update a record
+
+| Field | Value |
+| --- | --- |
+| Method | `PATCH` |
+| URL | `https://your-domain.my.salesforce.com/services/data/v62.0/sobjects/Account/001...` |
+| Body | `{ "Name": "Acme (Renamed)" }` |
+
+`PATCH` returns `204 No Content` on success. Enable **Options → Response → Include Response Headers
+and Status** if you need to assert on the status code.
+
+### Example: paginate a large query
+
+Salesforce returns at most 2,000 records per query page and sets `nextRecordsUrl` when more remain.
+Use HTTP Request's pagination to follow it:
+
+1. **Options → Pagination → Pagination Mode**: `Response Contains Next URL`
+2. **Next URL**:
+   ```
+   {{ $('Salesforce Session').item.json.instanceUrl }}{{ $response.body.nextRecordsUrl }}
+   ```
+3. **Pagination Complete When**: `Other`
+4. **Complete Expression**: `{{ $response.body.done === true }}`
+
+`nextRecordsUrl` is a path such as `/services/data/v62.0/query/01g...-2000`, so it must be prefixed
+with the instance URL.
+
+Do **not** use `Response Is Empty` here. That mode only stops on a bare JSON array or an empty body,
+and Salesforce always returns an object (`{ totalSize, done, records }`). With `Response Is Empty`
+the node keeps requesting pages until n8n aborts with *"The returned response was identical 5x"*.
+Salesforce's own end marker is the `done` boolean, which is what the expression above checks.
+
+### When to use the node instead
+
+Use **Salesforce Session → Request** when you want a single node with the endpoint path resolved for
+you and no URL to assemble. Use **HTTP Request** when you need pagination, batching, binary
+responses, or any option the wrapper does not expose.
 
 ## Node: Salesforce Session
 
