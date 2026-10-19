@@ -424,6 +424,22 @@ npm provenance, which n8n needs to consider the node for verified status.
    Bypass-2FA tokens are being deprecated for direct publishing in January 2027, so treat the token
    as a bootstrap step only.
 
+   If the token was created with **Read and write (stage only)** instead of **Read and write**, npm
+   stages each release rather than publishing it. The workflow then fails with:
+
+   ```
+   npm error 409 Conflict - Cannot publish over previously staged version "x.y.z"
+   ```
+
+   Promote the staged version by hand:
+
+   ```bash
+   npm stage list
+   npm stage approve <stage-id> --otp <code>
+   ```
+
+   Or recreate the token with plain **Read and write** access to publish directly.
+
    On npmjs.com → your package → **Settings → Publish access → Trusted Publishers → Add a
    publisher** → GitHub Actions, with repository owner `supanmaniar`, repository
    `n8n-nodes-salesforce-session`, workflow `publish.yml`. Then delete the `NPM_TOKEN` secret; the

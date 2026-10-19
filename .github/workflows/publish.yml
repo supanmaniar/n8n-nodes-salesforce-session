@@ -94,11 +94,6 @@ jobs:
         #   .npmrc here before publishing.
         run: |
           [ -n "$NPM_TOKEN" ] && npm config set //registry.npmjs.org/:_authToken "$NPM_TOKEN"
-          echo "--- npm version ---"; npm --version
-          echo "--- whoami ---"; npm whoami || echo "WHOAMI_FAILED"
-          echo "--- token length ---"; echo -n "$NPM_TOKEN" | wc -c
-          echo "--- token list ---"; npm token list 2>&1 | head -20 || true
-          echo "--- 2fa check ---"; npm profile get --json 2>/dev/null | head -40 || true
           npm run release
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
