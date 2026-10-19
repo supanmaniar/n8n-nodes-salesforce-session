@@ -1,0 +1,59 @@
+{
+	"name": "n8n-nodes-salesforce-session",
+	"version": "0.1.0",
+	"description": "n8n community node that logs in to Salesforce once and reuses the resulting session ID for REST API calls",
+	"license": "MIT",
+	"homepage": "https://github.com/supanmaniar/n8n-nodes-salesforce-session",
+	"keywords": [
+		"n8n-community-node-package",
+		"n8n",
+		"salesforce",
+		"session",
+		"soap"
+	],
+	"author": {
+		"name": "supanmaniar",
+		"email": "supanmaniar@users.noreply.github.com"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/supanmaniar/n8n-nodes-salesforce-session.git"
+	},
+	"scripts": {
+		"build": "n8n-node build",
+		"build:watch": "tsc --watch",
+		"dev": "n8n-node dev",
+		"lint": "n8n-node lint",
+		"lint:fix": "n8n-node lint --fix",
+		"typecheck": "tsc --noEmit",
+		"release": "n8n-node release",
+		"prepublishOnly": "n8n-node prerelease",
+		"test": "node scripts/smoke-test.js && node scripts/lifecycle-test.js && node scripts/node-test.js"
+	},
+	"files": [
+		"dist"
+	],
+	"n8n": {
+		"n8nNodesApiVersion": 1,
+		"strict": true,
+		"credentials": [
+			"dist/credentials/SalesforceSessionApi.credentials.js"
+		],
+		"nodes": [
+			"dist/nodes/SalesforceSession/SalesforceSession.node.js"
+		]
+	},
+	"devDependencies": {
+		"@n8n/node-cli": "^0.52.6",
+		"@types/node": "^22.20.5",
+		"eslint": "9.39.4",
+		"n8n-core": "^2.16.1",
+		"n8n-workflow": "^2.16.0",
+		"prettier": "3.8.3",
+		"release-it": "20.2.0",
+		"typescript": "5.9.3"
+	},
+	"peerDependencies": {
+		"n8n-workflow": "*"
+	}
+}
