@@ -22,6 +22,7 @@ its `sid` cookie.
 - [Credential: Salesforce Session API](#credential-salesforce-session-api)
 - [Node: Salesforce Session](#node-salesforce-session)
 - [Workflow examples](#workflow-examples)
+- [Publishing to npm](#publishing-to-npm)
 - [Development](#development)
 - [Notes and limits](#notes-and-limits)
 - [License](#license)
@@ -74,7 +75,7 @@ n8n scans for nodes at startup.
 
 Works when n8n can reach the npm registry and you are the instance owner or an admin.
 
-1. Publish the package to npm (or a private registry) first — see
+1. The package must be on npm. See [Publishing to npm](#publishing-to-npm), or
    [Method 7](#method-7-private-node-without-publishing) if you do not want to publish.
 2. In n8n, go to **Settings → Community Nodes → Install**.
 3. Enter the package name, optionally with a version: `n8n-nodes-salesforce-session` or
@@ -384,6 +385,60 @@ values above when you need a node this package does not cover.
 1. **Salesforce Session** → Operation `Get Session`.
 2. **HTTP Request** → URL `{{ $json.instanceUrl }}/services/data/v{{ $json.apiVersion }}/limits`,
    send header `Cookie` = `{{ $json.cookieHeader }}`.
+
+## Publishing to npm
+
+The package is published to npm by GitHub Actions, not from a local machine. This is required for
+npm provenance, which n8n needs to consider the node for verified status.
+
+### One-time setup
+
+1. **Create a Granular Access Token on npmjs.com**
+
+   Access Tokens → Generate New Token → Granular Access Token. Give it:
+   - **Packages and scopes:** Read and write
+   - **Packages:** `n8n-nodes-salesforce-session` (or all packages, if it does not exist yet)
+   - **Expiration:** 90 days or less
+
+2. **Add it as a repository secret**
+
+   ```bash
+   gh secret set NPM_TOKEN --repo supanmaniar/n8n-nodes-salesforce-session
+   ```
+
+   Paste the token when prompted. Never commit it.
+
+3. **After the first publish, switch to Trusted Publishing (optional but recommended)**
+
+   On npmjs.com → your package → **Settings → Publish access → Trusted Publishers → Add a
+   publisher** → GitHub Actions, with repository owner `supanmaniar`, repository
+   `n8n-nodes-salesforce-session`, workflow `publish.yml`. Then delete the `NPM_TOKEN` secret; the
+   workflow falls back to GitHub's OIDC token automatically.
+
+   Trusted Publishing can only be configured **after** the package exists on npm, which is why the
+   first release uses a token.
+
+### Releasing a new version
+
+```bash
+npm run release
+```
+
+This runs `release-it`, which lints, builds, prompts for a version bump, updates the changelog,
+commits, tags, and pushes. The tag push triggers `.github/workflows/publish.yml`, which publishes
+to npm with a provenance attestation.
+
+Do **not** run `npm publish` directly. The `prepublishOnly` hook blocks it unless `RELEASE_MODE` is
+set, and a local publish produces no provenance.
+
+### Verifying the publish
+
+```bash
+npm view n8n-nodes-salesforce-session version
+npm audit signatures
+```
+
+The package page on npmjs.com shows a **Provenance** badge once the attestation is attached.
 
 ## Development
 
