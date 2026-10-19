@@ -398,7 +398,18 @@ npm provenance, which n8n needs to consider the node for verified status.
    Access Tokens → Generate New Token → Granular Access Token. Give it:
    - **Packages and scopes:** Read and write
    - **Packages:** `n8n-nodes-salesforce-session` (or all packages, if it does not exist yet)
+   - **Bypass two-factor authentication:** ✅ **must be checked**
    - **Expiration:** 90 days or less
+
+   The bypass checkbox is not optional. Without it, CI publishing fails with:
+
+   ```
+   npm error 403 Two-factor authentication or granular access token with
+   bypass 2fa enabled is required to publish packages.
+   ```
+
+   npm requires an interactive 2FA challenge for publishes unless the token
+   explicitly opts out. A CI runner has no way to answer that challenge.
 
 2. **Add it as a repository secret**
 
@@ -408,7 +419,10 @@ npm provenance, which n8n needs to consider the node for verified status.
 
    Paste the token when prompted. Never commit it.
 
-3. **After the first publish, switch to Trusted Publishing (optional but recommended)**
+3. **After the first publish, switch to Trusted Publishing (recommended)**
+
+   Bypass-2FA tokens are being deprecated for direct publishing in January 2027, so treat the token
+   as a bootstrap step only.
 
    On npmjs.com → your package → **Settings → Publish access → Trusted Publishers → Add a
    publisher** → GitHub Actions, with repository owner `supanmaniar`, repository
